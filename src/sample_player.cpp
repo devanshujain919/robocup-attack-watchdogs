@@ -693,7 +693,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         
         Body_GoToPoint( Vector2D(-50,0), 0.0, ServerParam::i().maxDashPower(), -1, 4, true, 60).execute( agent );
         return true;
-    }
+    } 
 
     //Setting up of different flags.
 

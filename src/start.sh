@@ -51,7 +51,7 @@ coachdebug=""
 offline_logging=""
 offline_mode=""
 fullstateopt=""
-
+ 
 usage()
 {
   (echo "Usage: $0 [options]"
