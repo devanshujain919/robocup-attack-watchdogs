@@ -23,7 +23,7 @@ DIR=`dirname $0`
 
 player="${DIR}/sample_player"
 coach="${DIR}/sample_coach"
-teamname="watchdogs"
+teamname="HELIOS_base"
 host="localhost"
 port=6000
 coach_port=""
@@ -51,7 +51,7 @@ coachdebug=""
 offline_logging=""
 offline_mode=""
 fullstateopt=""
- 
+
 usage()
 {
   (echo "Usage: $0 [options]"
