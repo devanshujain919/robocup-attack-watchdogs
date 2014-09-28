@@ -47,6 +47,7 @@
 #include <rcsc/action/neck_turn_to_low_conf_teammate.h>
 
 #include <rcsc/player/player_agent.h>
+#include <rcsc/player/player_object.h>
 #include <rcsc/player/debug_client.h>
 #include <rcsc/player/intercept_table.h>
 
@@ -201,6 +202,9 @@ public:
 
     bool
     SampleDribble(rcsc::PlayerAgent * agent);
+
+    bool
+    SamplePass(rcsc::PlayerAgent * agent, const rcsc::PlayerObject * receiver);
 
 
     bool

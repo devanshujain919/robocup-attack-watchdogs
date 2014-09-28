@@ -373,6 +373,18 @@ SamplePlayer::actionImpl()
 }
 
 
+bool SamplePlayer::SamplePass(PlayerAgent *agent, const PlayerObject *target_mate)
+{
+    const double target_mate_distance = (target_mate ? target_mate->distFromSelf() : 1000.0);
+
+    const Vector2D target_mate_pos = (target_mate ? target_mate->pos() : Vector2D(-1000.0, 0.0));
+
+    Body_SmartKick(target_mate_pos, ServerParam::i().ballSpeedMax()*0.9, ServerParam::i().ballSpeedMax(), 8).execute(agent);
+
+    return true;
+
+}
+
 
 /*--------------------------------------------------------------------------*/
 
@@ -731,8 +743,12 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     // I have the ball, what to do?
     if ( kickable && !Opponenthasball)
     {
-        doKick( this);
-                       
+        //doKick( this);
+        const PlayerPtrCont &teammates = agent->world().teammatesFromSelf();
+
+        const PlayerObject * nearest_mate = (teammates.empty() ? static_cast<PlayerObject *>(0) : teammates.front());
+
+        SamplePass(agent, nearest_mate);
     }
 
     //This is for off the ball movement which attacking, where to go for passes etc.
