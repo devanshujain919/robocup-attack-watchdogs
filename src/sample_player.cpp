@@ -381,8 +381,30 @@ bool SamplePlayer::SamplePass(PlayerAgent *agent, const PlayerObject *target_mat
 
     Body_SmartKick(target_mate_pos, ServerParam::i().ballSpeedMax()*0.9, ServerParam::i().ballSpeedMax(), 8).execute(agent);
 
+    int unum = SamplePlayer::getUnum(agent, target_mate_pos);
+    if(unum == -1)
+    {
+        return false;
+    }
+    agent->addSayMessage( new PassMessage( unum, target_mate_pos, agent->effector().queuedNextBallPos(), agent->effector().queuedNextBallVel() ) );
+
     return true;
 
+}
+
+int SamplePlayer::getUnum(PlayerAgent *agent, Vector2D target)
+{
+    const WorldModel & wm = agent->world();
+    for(int i=2; i<=11; i++)
+    {
+        if(wm.ourPlayer(i)!=NULL)
+        {
+            Vector2D player_pos = wm.ourPlayer(i)->pos();
+            if( AreSamePoints(player_pos, target, 5) && i!=wm.self().unum() )
+                return i;
+        }
+    }
+    return -1;
 }
 
 

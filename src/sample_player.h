@@ -206,6 +206,9 @@ public:
     bool
     SamplePass(rcsc::PlayerAgent * agent, const rcsc::PlayerObject * receiver);
 
+    int
+    getUnum(rcsc::PlayerAgent *agent, rcsc::Vector2D target);
+
 
     bool
     ManMark( rcsc::PlayerAgent * agent );
