@@ -371,7 +371,7 @@ SamplePlayer::actionImpl()
         return;
     }
 }
-
+   
 
 bool SamplePlayer::SamplePass(PlayerAgent *agent, const PlayerObject *target_mate)
 {
