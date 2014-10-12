@@ -738,13 +738,14 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         const PlayerObject * nearest_mate = (teammates.empty() ? static_cast<PlayerObject *>(0) : teammates.front());
 
         //SamplePass(agent, nearest_mate);
-        ThroughPass(agent, nearest_mate);
+        GiveThrough(agent, nearest_mate);
     }
 
     //This is for off the ball movement which attacking, where to go for passes etc.
     else if (!kickable && !Opponenthasball)
     {   
-        doMove(this);
+        RunThrough(agent);
+        //doMove(this);
         return true;
     } 
     //ATTACK ENDS HERE
@@ -806,7 +807,7 @@ bool SamplePlayer::SamplePass(PlayerAgent *agent, const PlayerObject *target_mat
 
 }
 
-bool SamplePlayer::ThroughPass(PlayerAgent *agent, const PlayerObject *target_mate)
+bool SamplePlayer::GiveThrough(PlayerAgent *agent, const PlayerObject *target_mate)
 {
     const WorldModel &wm = agent->world();
 
@@ -815,14 +816,37 @@ bool SamplePlayer::ThroughPass(PlayerAgent *agent, const PlayerObject *target_ma
     double *dist;
 
     const PlayerObject *opponent = wm.getOpponentNearestTo(target_mate, 10, dist);
+    Vector2D opponent_pos;
 
-    Vector2D opponent_pos = opponent->pos();
+    if(opponent == NULL)
+        opponent_pos = Vector2D(mate_pos.x + 10.0, mate_pos.y);
+
+    else
+        opponent_pos = opponent->pos();
 
     Vector2D vecbetween = mate_pos - opponent_pos;
 
     Vector2D target = wm.self().pos() + opponent_pos + (vecbetween*1.5);
 
     return Body_KickOneStep(target, ServerParam::i().ballSpeedMax()*0.8, false).execute(agent);
+
+}
+
+bool SamplePlayer::RunThrough(PlayerAgent *agent)
+{
+    WorldModel &wm = agent->world();
+    PlayerObject *player = wm.getTeammateNearestToBall(5, true);
+    if(AreSamePoints(wm.self().pos(), wm.self().pos()+player->pos(), 5))
+    {
+        // same player
+        Vector2D ball_pos = wm.ball().pos();
+        Bhv_GoToPointLookBall(ball_pos, 10, ServerParam::i().maxDashPower(), 0.7).execute();
+    }
+}
+
+bool SamplePlayer::Dribble(Player *agent)
+{
+    const WorldModel &wm = agent->world();
 
 }
 

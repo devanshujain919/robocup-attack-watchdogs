@@ -207,7 +207,13 @@ public:
     SamplePass(rcsc::PlayerAgent * agent, const rcsc::PlayerObject * receiver);
 
     bool
-    ThroughPass(rcsc::PlayerAgent * agent, const rcsc::PlayerObject * receiver);
+    GiveThrough(rcsc::PlayerAgent * agent, const rcsc::PlayerObject * receiver);
+
+    bool
+    RunThrough(rcsc::PlayerAgent *agent);
+
+    bool
+    Dribble(rcsc::PlayerAgent *agent);
 
     int
     getUnum(rcsc::PlayerAgent *agent, rcsc::Vector2D target);
