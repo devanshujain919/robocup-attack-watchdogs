@@ -810,18 +810,19 @@ bool SamplePlayer::ThroughPass(PlayerAgent *agent, const PlayerObject *target_ma
 {
     const WorldModel &wm = agent->world();
 
-    Vector2D mate_pos = target_mate->pos()
+    Vector2D mate_pos = target_mate->pos();
 
     double *dist;
 
-    PlayerObject *opponent = wm.getOpponentNearestTo(target_mate, 10, dist);
+    const PlayerObject *opponent = wm.getOpponentNearestTo(target_mate, 10, dist);
 
-    Vector2D oppn_pos
+    Vector2D opponent_pos = opponent->pos();
 
-}
+    Vector2D vecbetween = mate_pos - opponent_pos;
 
-bool SamplePlayer::Dribble(PlayerAgent *agent)
-{
+    Vector2D target = wm.self().pos() + opponent_pos + (vecbetween*1.5);
+
+    return Body_KickOneStep(target, ServerParam::i().ballSpeedMax()*0.8, false).execute(agent);
 
 }
 
