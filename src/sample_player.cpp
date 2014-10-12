@@ -834,17 +834,17 @@ bool SamplePlayer::GiveThrough(PlayerAgent *agent, const PlayerObject *target_ma
 
 bool SamplePlayer::RunThrough(PlayerAgent *agent)
 {
-    WorldModel &wm = agent->world();
-    PlayerObject *player = wm.getTeammateNearestToBall(5, true);
+    const WorldModel &wm = agent->world();
+    const PlayerObject *player = wm.getTeammateNearestToBall(5, true);
     if(AreSamePoints(wm.self().pos(), wm.self().pos()+player->pos(), 5))
     {
         // same player
         Vector2D ball_pos = wm.ball().pos();
-        Bhv_GoToPointLookBall(ball_pos, 10, ServerParam::i().maxDashPower(), 0.7).execute();
+        Body_GoToPoint( ball_pos, 0.5, ServerParam::i().maxDashPower()).execute(agent);
     }
 }
 
-bool SamplePlayer::Dribble(Player *agent)
+bool SamplePlayer::Dribble(PlayerAgent *agent)
 {
     const WorldModel &wm = agent->world();
 
