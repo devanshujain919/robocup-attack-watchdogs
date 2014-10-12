@@ -373,39 +373,6 @@ SamplePlayer::actionImpl()
 }
    
 
-bool SamplePlayer::SamplePass(PlayerAgent *agent, const PlayerObject *target_mate)
-{
-    const double target_mate_distance = (target_mate ? target_mate->distFromSelf() : 1000.0);
-
-    const Vector2D target_mate_pos = (target_mate ? target_mate->pos() : Vector2D(-1000.0, 0.0));
-
-    Body_SmartKick(target_mate_pos, ServerParam::i().ballSpeedMax()*0.9, ServerParam::i().ballSpeedMax(), 8).execute(agent);
-
-    int unum = SamplePlayer::getUnum(agent, target_mate_pos);
-    if(unum == -1)
-    {
-        return false;
-    }
-    agent->addSayMessage( new PassMessage( unum, target_mate_pos, agent->effector().queuedNextBallPos(), agent->effector().queuedNextBallVel() ) );
-
-    return true;
-
-}
-
-int SamplePlayer::getUnum(PlayerAgent *agent, Vector2D target)
-{
-    const WorldModel & wm = agent->world();
-    for(int i=2; i<=11; i++)
-    {
-        if(wm.ourPlayer(i)!=NULL)
-        {
-            Vector2D player_pos = wm.ourPlayer(i)->pos();
-            if( AreSamePoints(player_pos, target, 5) && i!=wm.self().unum() )
-                return i;
-        }
-    }
-    return -1;
-}
 
 
 /*--------------------------------------------------------------------------*/
@@ -770,7 +737,8 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 
         const PlayerObject * nearest_mate = (teammates.empty() ? static_cast<PlayerObject *>(0) : teammates.front());
 
-        SamplePass(agent, nearest_mate);
+        //SamplePass(agent, nearest_mate);
+        ThroughPass(agent, nearest_mate);
     }
 
     //This is for off the ball movement which attacking, where to go for passes etc.
@@ -818,6 +786,62 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 /*!
 
 */
+
+bool SamplePlayer::SamplePass(PlayerAgent *agent, const PlayerObject *target_mate)
+{
+    const double target_mate_distance = (target_mate ? target_mate->distFromSelf() : 1000.0);
+
+    const Vector2D target_mate_pos = (target_mate ? target_mate->pos() : Vector2D(-1000.0, 0.0));
+
+    Body_SmartKick(target_mate_pos, ServerParam::i().ballSpeedMax()*0.9, ServerParam::i().ballSpeedMax(), 8).execute(agent);
+
+    int unum = getUnum(agent, target_mate_pos);
+    if(unum == -1)
+    {
+        return false;
+    }
+    agent->addSayMessage( new PassMessage( unum, target_mate_pos, agent->effector().queuedNextBallPos(), agent->effector().queuedNextBallVel() ) );
+
+    return true;
+
+}
+
+bool SamplePlayer::ThroughPass(PlayerAgent *agent, const PlayerObject *target_mate)
+{
+    const WorldModel &wm = agent->world();
+
+    Vector2D mate_pos = target_mate->pos()
+
+    double *dist;
+
+    PlayerObject *opponent = wm.getOpponentNearestTo(target_mate, 10, dist);
+
+    Vector2D oppn_pos
+
+}
+
+bool SamplePlayer::Dribble(PlayerAgent *agent)
+{
+
+}
+
+int SamplePlayer::getUnum(PlayerAgent *agent, Vector2D target)
+{
+    const WorldModel & wm = agent->world();
+    for(int i=2; i<=11; i++)
+    {
+        if(wm.ourPlayer(i)!=NULL)
+        {
+            Vector2D player_pos = wm.ourPlayer(i)->pos();
+            if( AreSamePoints(player_pos, target, 5) && i!=wm.self().unum() )
+                return i;
+        }
+    }
+    return -1;
+}
+
+
+
 void
 SamplePlayer::doKick( PlayerAgent * agent )
 {
