@@ -847,6 +847,9 @@ bool SamplePlayer::RunThrough(PlayerAgent *agent)
 bool SamplePlayer::Dribble(PlayerAgent *agent)
 {
     const WorldModel &wm = agent->world();
+    Vector2D pos = Vector2D(ServerParam::i().pitchHalfLength(), 0.0);
+    Body_KickOneStep(pos, ServerParam::i().ballSpeedMax()*0.8, false).execute(agent);
+    Body_GoToPoint( wm.ball().pos(), 0.5, ServerParam::i().maxDashPower()).execute(agent);
 
 }
 
