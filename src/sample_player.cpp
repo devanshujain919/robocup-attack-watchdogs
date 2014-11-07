@@ -788,6 +788,7 @@ int SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std::strings
                     // do nothing
                 }
             }
+            getline(myfile, line); // bcoz i am writing the length of the string written too!!!!!!!!!11
         }
         *q_value = maxQ;
         return action;
