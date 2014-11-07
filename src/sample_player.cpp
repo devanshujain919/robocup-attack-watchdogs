@@ -99,6 +99,7 @@
 #include <string>
 #include <cstdlib>
 #include <vector> 
+#include <fstream>
 
 using namespace rcsc;
 
@@ -649,6 +650,87 @@ SamplePlayer::ClosestPlayerToBall(PlayerAgent * agent){
     return mindisunum;
 }
 
+void 
+SamplePlayer::writeState(PlayerAgent *agent, int action, double q_value)
+{
+    std::cout << "--------------------------------------------------WRITING-------------------------------------------------------------------\n" << std::flush;
+    const WorldModel &wm = agent->world();
+    std::ofstream myfile;
+    std::stringstream sstm;
+    sstm << "state_file" << wm.self().unum() << ".txt";
+    std::string res = sstm.str();
+    myfile.open (res.c_str(), std::ios::app);
+    if(myfile.is_open())
+    {
+        std::cout << "It is opened\n" << std::flush;
+
+        Vector2D myPos = wm.self().pos();
+
+        const PlayerPtrCont & opps = wm.opponentsFromSelf();
+        const PlayerPtrCont::const_iterator end = opps.end();
+        std::vector<Vector2D> oppositionPos;
+        for(PlayerPtrCont::const_iterator it = opps.begin() ; it != end ; ++it)
+        {
+            const Vector2D &u = (*it)->rpos();
+            const Vector2D v = u + myPos;
+            oppositionPos.push_back(v);
+        }
+
+        const PlayerPtrCont & team = wm.teammatesFromSelf();
+        const PlayerPtrCont::const_iterator end2 = team.end();
+        std::vector<Vector2D> teamPos;
+        for(PlayerPtrCont::const_iterator it = team.begin() ; it != end2 ; ++it)
+        {
+            const Vector2D &u = (*it)->rpos();
+            const Vector2D v = u + myPos;
+            teamPos.push_back(v);
+        }
+
+        const BallObject &ball = wm.ball();
+        const Vector2D ballPos = ball.pos();
+
+        int halfWidth = ServerParam::i().pitchHalfWidth();
+        int halfLength = ServerParam::i().pitchHalfLength();
+
+        int regionsHalfWidth = 9;
+        int regionsHalfLength = 12;
+
+        int widthEachCell = halfWidth/regionsHalfWidth;
+        int lengthEachCell = halfLength/regionsHalfLength;
+
+        std::stringstream ss;
+
+        ss << "[";
+        for ( std::vector<Vector2D>::iterator it = teamPos.begin() ; it != teamPos.end(); ++it)
+        {
+            int x = (*it).x/lengthEachCell ;
+            int y = (*it).y/widthEachCell ;
+            ss << "(T:" << x << "," << y << ")";
+        }
+        for (std::vector<Vector2D>::iterator it = oppositionPos.begin() ; it != oppositionPos.end(); ++it)
+        {
+            int x = (*it).x/lengthEachCell ;
+            int y = (*it).y/widthEachCell ;
+            ss << "(O:" << x << "," << y << ")";
+        }
+        
+        int x = ballPos.x/lengthEachCell ;
+        int y = ballPos.y/widthEachCell ;
+        ss << "(B:" << x << "," << y << ")]";
+        ss << "[A:" << action << "]" << "[Q:" << q_value << "]";
+        std::string result = ss.str();
+
+        myfile << result;
+        myfile << "\n;";
+        
+        myfile << result.length();
+        myfile << ";\n";
+
+        myfile.flush();
+        myfile.close();
+    }
+}
+
 
 //main function that will be used.
 
@@ -730,22 +812,70 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 
     //ATTACK STARTS HERE
     // I have the ball, what to do?
+
+    double alpha = 0.5; // importance given to the new learnings
+    
+    std::srand (time(NULL));
+    int random = rand() % 100 + 1;
+    int act;
+    if(random <= 30)
+    {
+        // do random action
+        act = rand() % ACTIONSPACESIZE;
+    }
+    else
+    {
+        // choose action according to policy
+        act = chooseAction();
+    }
+
+    // here execute the action
+
+    switch(act)
+    {
+        case Pass:      
+                        break;
+        case Hold:      
+                        break;
+        case Dribble:   
+                        break;
+        case Move:      
+                        break;
+        case Intercept: 
+                        break;
+        case Goal:      
+                        break;
+        default:        
+                        break;
+    }
+
+    // observe new state and get the reward
+    int reward;
+
+    // apply the formula to compute the q value for previous state
+    double q_value;
+    readStateForQLearning(agent); // gets the maximum q-value for that state
+    
+    // write the new state value to the file
+    writeState(agent, act, q_value);
+
+    /*
     if ( kickable && !Opponenthasball)
     {
-        //doKick( this);
-        const PlayerPtrCont &teammates = agent->world().teammatesFromSelf();
+        doKick( this);
+        //const PlayerPtrCont &teammates = agent->world().teammatesFromSelf();
 
-        const PlayerObject * nearest_mate = (teammates.empty() ? static_cast<PlayerObject *>(0) : teammates.front());
+        //const PlayerObject * nearest_mate = (teammates.empty() ? static_cast<PlayerObject *>(0) : teammates.front());
 
         //SamplePass(agent, nearest_mate);
-        GiveThrough(agent, nearest_mate);
+        //GiveThrough(agent, nearest_mate);
     }
 
     //This is for off the ball movement which attacking, where to go for passes etc.
     else if (!kickable && !Opponenthasball)
     {   
-        RunThrough(agent);
-        //doMove(this);
+        //RunThrough(agent);
+        doMove(this);
         return true;
     } 
     //ATTACK ENDS HERE
@@ -777,9 +907,9 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         }
         return true;
     };
-
+    */
     //DEFENSE ENDS HERE.
-
+    
     return true;
 }
 
@@ -787,6 +917,12 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 /*!
 
 */
+
+int SamplePlayer::chooseAction(PlayerAgent *agent, std::string filename)
+{
+
+    return -1;
+}
 
 bool SamplePlayer::SamplePass(PlayerAgent *agent, const PlayerObject *target_mate)
 {
@@ -844,13 +980,12 @@ bool SamplePlayer::RunThrough(PlayerAgent *agent)
     }
 }
 
-bool SamplePlayer::Dribble(PlayerAgent *agent)
+bool SamplePlayer::impl_dribble(PlayerAgent *agent)
 {
     const WorldModel &wm = agent->world();
     Vector2D pos = Vector2D(ServerParam::i().pitchHalfLength(), 0.0);
     Body_KickOneStep(pos, ServerParam::i().ballSpeedMax()*0.8, false).execute(agent);
     Body_GoToPoint( wm.ball().pos(), 0.5, ServerParam::i().maxDashPower()).execute(agent);
-
 }
 
 int SamplePlayer::getUnum(PlayerAgent *agent, Vector2D target)

@@ -58,6 +58,8 @@
 
 #include <string>
 #include <vector>
+//#include <stdlib>
+//#include <time>
 
 class SamplePlayer
     : public rcsc::PlayerAgent {
@@ -69,6 +71,8 @@ private:
     ActionGenerator::ConstPtr M_action_generator;
 
 public:
+
+    enum Action {Pass, Hold, Dribble, Move, Intercept, Goal, ACTIONSPACESIZE};
 
     SamplePlayer();
 
@@ -213,7 +217,7 @@ public:
     RunThrough(rcsc::PlayerAgent *agent);
 
     bool
-    Dribble(rcsc::PlayerAgent *agent);
+    impl_dribble(rcsc::PlayerAgent *agent);
 
     int
     getUnum(rcsc::PlayerAgent *agent, rcsc::Vector2D target);
@@ -231,6 +235,11 @@ public:
     bool
     executeDefense( rcsc::PlayerAgent * agent );
 
+    void
+    writeState( rcsc::PlayerAgent *agent, int action, double q_value );
+
+    int 
+    chooseAction(rcsc::PlayerAgent *agent, std::string filename);
 
 private:
     double getDashPower( const rcsc::PlayerAgent * agent );
