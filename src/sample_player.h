@@ -239,13 +239,13 @@ public:
     writeState( rcsc::PlayerAgent *agent, int action, double q_value );
 
     int 
-    chooseAction(rcsc::PlayerAgent *agent, double *q_value);
+    chooseAction(rcsc::PlayerAgent *agent, double *q_value, std::stringstream ss);
 
     double
     readStateForQLearning(rcsc::PlayerAgent *agent);
 
     double
-    obtainReward(rcsc::PlayerAgent *agent);
+    obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState);
 
     std::stringstream
     createState(rcsc::PlayerAgent *agent);

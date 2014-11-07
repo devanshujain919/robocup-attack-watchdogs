@@ -739,11 +739,10 @@ SamplePlayer::writeState(PlayerAgent *agent, int action, double q_value)
     }
 }
 
-int SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value)
+int SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std::stringstream ss)
 {
     const WorldModel &wm = agent->world();
 
-    std::stringstream ss = createState(agent);
     std::ifstream myfile;
     std::stringstream sstm;
     sstm << "state_file" << wm.self().unum() << ".txt";
@@ -883,20 +882,26 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     std::srand (time(NULL));
     int random = rand() % 100 + 1;
     int act;
+    double q_val;
+    double *ptr_q_val = &q_val;
+    std::stringstream prevState;
+
     if(random <= 30)
     {
         // do random action
         act = rand() % ACTION_SPACE_SIZE;
+        q_val = 0;
     }
     else
     {
         // choose action according to policy
-        double *q_val
-        act = chooseAction(agent, q_val);
-        if(q_val == NULL)
+        prevState = createState(agent);
+        act = chooseAction(agent, ptr_q_val, prevState);
+        if(ptr_q_val == NULL)
         {
             // if no such found, then choose an action randomly
             act = rand() % ACTION_SPACE_SIZE;
+            q_val = 0;
         }
     }
 
@@ -920,13 +925,21 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
                         break;
     }
 
-    // observe new state and get the reward
-    double reward = obtainReward(agent);
+    std::stringstream newState= createState(agent);// get new state of the player
+    
+    double reward = obtainReward(agent, prevState.str(), newState.str()); // obtain reward according to it
 
     // apply the formula to compute the q value for previous state
-    double q_value;
-    double q = readStateForQLearning(agent); // gets the maximum q-value for that state
-    
+    double q_value, newState_q_value;
+    double *ptr_newState_q_value = &newState_q_value;
+    chooseAction(agent, ptr_newState_q_value, newState); // gets the maximum q-value for that state
+    if(ptr_newState_q_value == NULL)
+    {
+        // didn't find the state
+        newState_q_value = 0;
+    }
+    q_value = (1-alpha)*q_val  + alpha*(reward + newState_q_value)
+
     // write the new state value to the file
     writeState(agent, act, q_value);
 
