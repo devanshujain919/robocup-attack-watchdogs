@@ -650,11 +650,73 @@ SamplePlayer::ClosestPlayerToBall(PlayerAgent * agent){
     return mindisunum;
 }
 
+std::stringstream 
+SamplePlayer::createState(PlayerAgent *agent)
+{
+    const WorldModel &wm = agent->world();
+    Vector2D myPos = wm.self().pos();
+
+    const PlayerPtrCont & opps = wm.opponentsFromSelf();
+    const PlayerPtrCont::const_iterator end = opps.end();
+    std::vector<Vector2D> oppositionPos;
+    for(PlayerPtrCont::const_iterator it = opps.begin() ; it != end ; ++it)
+    {
+        const Vector2D &u = (*it)->rpos();
+        const Vector2D v = u + myPos;
+        oppositionPos.push_back(v);
+    }
+
+    const PlayerPtrCont & team = wm.teammatesFromSelf();
+    const PlayerPtrCont::const_iterator end2 = team.end();
+    std::vector<Vector2D> teamPos;
+    for(PlayerPtrCont::const_iterator it = team.begin() ; it != end2 ; ++it)
+    {
+        const Vector2D &u = (*it)->rpos();
+        const Vector2D v = u + myPos;
+        teamPos.push_back(v);
+    }
+
+    const BallObject &ball = wm.ball();
+    const Vector2D ballPos = ball.pos();
+
+    int halfWidth = ServerParam::i().pitchHalfWidth();
+    int halfLength = ServerParam::i().pitchHalfLength();
+
+    int regionsHalfWidth = 9;
+    int regionsHalfLength = 12;
+
+    int widthEachCell = halfWidth/regionsHalfWidth;
+    int lengthEachCell = halfLength/regionsHalfLength;
+
+    std::stringstream ss;
+
+    ss << "[";
+    for ( std::vector<Vector2D>::iterator it = teamPos.begin() ; it != teamPos.end(); ++it)
+    {
+        int x = (*it).x/lengthEachCell ;
+        int y = (*it).y/widthEachCell ;
+        ss << "(T:" << x << "," << y << ")";
+    }
+    for (std::vector<Vector2D>::iterator it = oppositionPos.begin() ; it != oppositionPos.end(); ++it)
+    {
+        int x = (*it).x/lengthEachCell ;
+        int y = (*it).y/widthEachCell ;
+        ss << "(O:" << x << "," << y << ")";
+    }
+    
+    int x = ballPos.x/lengthEachCell ;
+    int y = ballPos.y/widthEachCell ;
+    ss << "(B:" << x << "," << y << ")]";
+
+    return ss;
+}
+
 void 
 SamplePlayer::writeState(PlayerAgent *agent, int action, double q_value)
 {
-    std::cout << "--------------------------------------------------WRITING-------------------------------------------------------------------\n" << std::flush;
     const WorldModel &wm = agent->world();
+
+    std::cout << "Writing to the file\n";
     std::ofstream myfile;
     std::stringstream sstm;
     sstm << "state_file" << wm.self().unum() << ".txt";
@@ -662,61 +724,7 @@ SamplePlayer::writeState(PlayerAgent *agent, int action, double q_value)
     myfile.open (res.c_str(), std::ios::app);
     if(myfile.is_open())
     {
-        std::cout << "It is opened\n" << std::flush;
-
-        Vector2D myPos = wm.self().pos();
-
-        const PlayerPtrCont & opps = wm.opponentsFromSelf();
-        const PlayerPtrCont::const_iterator end = opps.end();
-        std::vector<Vector2D> oppositionPos;
-        for(PlayerPtrCont::const_iterator it = opps.begin() ; it != end ; ++it)
-        {
-            const Vector2D &u = (*it)->rpos();
-            const Vector2D v = u + myPos;
-            oppositionPos.push_back(v);
-        }
-
-        const PlayerPtrCont & team = wm.teammatesFromSelf();
-        const PlayerPtrCont::const_iterator end2 = team.end();
-        std::vector<Vector2D> teamPos;
-        for(PlayerPtrCont::const_iterator it = team.begin() ; it != end2 ; ++it)
-        {
-            const Vector2D &u = (*it)->rpos();
-            const Vector2D v = u + myPos;
-            teamPos.push_back(v);
-        }
-
-        const BallObject &ball = wm.ball();
-        const Vector2D ballPos = ball.pos();
-
-        int halfWidth = ServerParam::i().pitchHalfWidth();
-        int halfLength = ServerParam::i().pitchHalfLength();
-
-        int regionsHalfWidth = 9;
-        int regionsHalfLength = 12;
-
-        int widthEachCell = halfWidth/regionsHalfWidth;
-        int lengthEachCell = halfLength/regionsHalfLength;
-
-        std::stringstream ss;
-
-        ss << "[";
-        for ( std::vector<Vector2D>::iterator it = teamPos.begin() ; it != teamPos.end(); ++it)
-        {
-            int x = (*it).x/lengthEachCell ;
-            int y = (*it).y/widthEachCell ;
-            ss << "(T:" << x << "," << y << ")";
-        }
-        for (std::vector<Vector2D>::iterator it = oppositionPos.begin() ; it != oppositionPos.end(); ++it)
-        {
-            int x = (*it).x/lengthEachCell ;
-            int y = (*it).y/widthEachCell ;
-            ss << "(O:" << x << "," << y << ")";
-        }
-        
-        int x = ballPos.x/lengthEachCell ;
-        int y = ballPos.y/widthEachCell ;
-        ss << "(B:" << x << "," << y << ")]";
+        std::stringstream ss = createState(agent);
         ss << "[A:" << action << "]" << "[Q:" << q_value << "]";
         std::string result = ss.str();
 
@@ -731,6 +739,63 @@ SamplePlayer::writeState(PlayerAgent *agent, int action, double q_value)
     }
 }
 
+int SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value)
+{
+    const WorldModel &wm = agent->world();
+
+    std::stringstream ss = createState(agent);
+    std::ifstream myfile;
+    std::stringstream sstm;
+    sstm << "state_file" << wm.self().unum() << ".txt";
+    std::string res = sstm.str();
+    myfile.open (res.c_str());
+    if(myfile.is_open())
+    {
+        std::string line;
+        int flag = 0;
+        double maxQ;
+        int action; 
+        while(getline(myfile, line))
+        {
+            int pos = line.find_first_of("]");
+            std::string state = line.substr(0,pos+1);
+            int comparable = ss.str().compare(state);
+            if(comparable == 0)
+            {
+                // this is the one
+                int pos2 = line.substr(pos+1,line.size()).find_first_of(":");
+                int pos3 = line.substr(pos+1,line.size()).find_first_of("]");
+                std::string a = line.substr(pos2+1, pos3);
+
+                int pos4 = line.substr(pos3+1,line.size()).find_first_of(":");
+                int pos5 = line.substr(pos3+1,line.size()).find_first_of("]");
+                std::string q = line.substr(pos4+1, pos5);
+
+                int act = stoi(act);
+                double qval = stod(q);
+                if(!flag)
+                {
+                    maxQ = qval;
+                    action = act;
+                    flag = 1;
+                }
+                else if(maxQ < qval)
+                {
+                    maxQ = qval;
+                    action = act;
+                }
+                else
+                {
+                    // do nothing
+                }
+            }
+        }
+        *q_value = maxQ;
+        return action;
+    }
+    q = NULL;
+    return -1;
+}
 
 //main function that will be used.
 
@@ -821,12 +886,18 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     if(random <= 30)
     {
         // do random action
-        act = rand() % ACTIONSPACESIZE;
+        act = rand() % ACTION_SPACE_SIZE;
     }
     else
     {
         // choose action according to policy
-        act = chooseAction();
+        double *q_val
+        act = chooseAction(agent, q_val);
+        if(q_val == NULL)
+        {
+            // if no such found, then choose an action randomly
+            act = rand() % ACTION_SPACE_SIZE;
+        }
     }
 
     // here execute the action
@@ -850,11 +921,11 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     }
 
     // observe new state and get the reward
-    int reward;
+    double reward = obtainReward(agent);
 
     // apply the formula to compute the q value for previous state
     double q_value;
-    readStateForQLearning(agent); // gets the maximum q-value for that state
+    double q = readStateForQLearning(agent); // gets the maximum q-value for that state
     
     // write the new state value to the file
     writeState(agent, act, q_value);
@@ -917,12 +988,6 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 /*!
 
 */
-
-int SamplePlayer::chooseAction(PlayerAgent *agent, std::string filename)
-{
-
-    return -1;
-}
 
 bool SamplePlayer::SamplePass(PlayerAgent *agent, const PlayerObject *target_mate)
 {
