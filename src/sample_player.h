@@ -72,7 +72,7 @@ private:
 
 public:
 
-    enum Action {Pass, Hold, Dribble, Move, Intercept, Goal, ACTION_SPACE_SIZE};
+    enum Action {Pass, Hold, Dribble, Move, Goal, Intercept, ACTION_SPACE_SIZE};
 
     SamplePlayer();
 
@@ -236,10 +236,10 @@ public:
     executeDefense( rcsc::PlayerAgent * agent );
 
     void
-    writeState( rcsc::PlayerAgent *agent, int action, double q_value );
+    writeState( rcsc::PlayerAgent *agent, std::string prevState, int action, int action_arg, double q_value );
 
-    int 
-    chooseAction(rcsc::PlayerAgent *agent, double *q_value, std::stringstream ss);
+    std::string 
+    chooseAction(rcsc::PlayerAgent *agent, double *q_value, std::string ss);
 
     double
     readStateForQLearning(rcsc::PlayerAgent *agent);
@@ -247,8 +247,11 @@ public:
     double
     obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState);
 
-    std::stringstream
+    std::string
     createState(rcsc::PlayerAgent *agent);
+
+    double
+    findQ( rcsc::PlayerAgent *agent, std::string stateAction );
 
 private:
     double getDashPower( const rcsc::PlayerAgent * agent );
