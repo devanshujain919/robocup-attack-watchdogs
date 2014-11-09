@@ -661,7 +661,7 @@ SamplePlayer::createState(PlayerAgent *agent)
     const WorldModel &wm = agent->world();
     Vector2D myPos = wm.self().pos();
 
-    /* What does the iterator do ? */
+    /* Iterator over all the players and obtain their relative position */
     const PlayerPtrCont & opps = wm.opponentsFromSelf();
     const PlayerPtrCont::const_iterator end = opps.end();
     std::vector<Vector2D> oppositionPos;
@@ -682,7 +682,7 @@ SamplePlayer::createState(PlayerAgent *agent)
         teamPos.push_back(v);
     }
 
-    /* Why are the following variables required */
+    /* Following variables required to obtain the region in which the other players are */
     const BallObject &ball = wm.ball();
     const Vector2D ballPos = ball.pos();
 
@@ -735,6 +735,8 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
     /* Write the recorded states to a file */
     std::stringstream ss;
     ss << prevState;
+
+    /* Write the action */
     ss << "[A:" << action;
     if(action == Pass)
     {
@@ -744,6 +746,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
 
     std::string stateAction_new = ss.str();
 
+    /* Write the q-value */
     ss << "[Q:" << q_value << "]";
 
     std::string result = ss.str();
@@ -768,7 +771,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
     myfile.open (res.c_str());
     if(myfile.is_open())
     {
-        /* Where do you write the q-values and actions? */
+
         int flag = 0;
         std::streampos writePos = 0;
         std::string line;
@@ -873,6 +876,7 @@ SamplePlayer::findQ( PlayerAgent *agent, std::string stateAction )
 {
     const WorldModel &wm = agent->world();
 
+    /* Finding the q-value from the file given the agent and state-action */
     std::ifstream myfile;
     std::stringstream sstm;
     sstm << "state_file" << wm.self().unum() << ".txt";
@@ -907,6 +911,18 @@ double
 SamplePlayer::obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState)
 {
     //TODO
+    /*
+        --------------- Rewards --------------
+        Score Goal: +1.00
+        Concede Goal: -1.00
+        Successful Pass: +0.01 * distance(agent, player)
+        Failed Pass: -0.01 * distance from opposition goal to where the ball was intercepted
+                    OR -0.1
+        Successful Dribble: +0.02 * distance(initial pos, final pos)
+        Failed Dribble / Losing the ball on hand: -0.1
+        Intercept / Tackle: +0.1
+    */
+
     return 0;
 }
 
