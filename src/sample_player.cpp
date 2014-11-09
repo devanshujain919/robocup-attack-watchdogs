@@ -661,6 +661,7 @@ SamplePlayer::createState(PlayerAgent *agent)
     const WorldModel &wm = agent->world();
     Vector2D myPos = wm.self().pos();
 
+    /* What does the iterator do ? */
     const PlayerPtrCont & opps = wm.opponentsFromSelf();
     const PlayerPtrCont::const_iterator end = opps.end();
     std::vector<Vector2D> oppositionPos;
@@ -681,6 +682,7 @@ SamplePlayer::createState(PlayerAgent *agent)
         teamPos.push_back(v);
     }
 
+    /* Why are the following variables required */
     const BallObject &ball = wm.ball();
     const Vector2D ballPos = ball.pos();
 
@@ -693,8 +695,14 @@ SamplePlayer::createState(PlayerAgent *agent)
     int widthEachCell = halfWidth/regionsHalfWidth;
     int lengthEachCell = halfLength/regionsHalfLength;
 
+    /* File pointer */
     std::stringstream ss;
 
+    /*  --  Start recording the values for the state --  */
+
+    /* Recording Format -> "[(T:x1,y1)(T:x2,y2)....(O:x1,y1)(O:x2,y2)....[(B:x,y)]" */
+
+    /* Record team player's position values */
     ss << "[";
     for ( std::vector<Vector2D>::iterator it = teamPos.begin() ; it != teamPos.end(); ++it)
     {
@@ -702,6 +710,8 @@ SamplePlayer::createState(PlayerAgent *agent)
         int y = (*it).y/widthEachCell ;
         ss << "(T:" << x << "," << y << ")";
     }
+
+    /* Record opponent player's position values */
     for (std::vector<Vector2D>::iterator it = oppositionPos.begin() ; it != oppositionPos.end(); ++it)
     {
         int x = (*it).x/lengthEachCell ;
@@ -709,6 +719,7 @@ SamplePlayer::createState(PlayerAgent *agent)
         ss << "(O:" << x << "," << y << ")";
     }
     
+    /* Record ball's position */
     int x = ballPos.x/lengthEachCell ;
     int y = ballPos.y/widthEachCell ;
     ss << "(B:" << x << "," << y << ")]";
@@ -721,6 +732,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
 {
     const WorldModel &wm = agent->world();
 
+    /* Write the recorded states to a file */
     std::stringstream ss;
     ss << prevState;
     ss << "[A:" << action;
@@ -736,7 +748,11 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
 
     std::string result = ss.str();
     int length = result.length();
-    int remainingLength = 350 - length; // 350 : maximum number of characters in a line = 11*11 + 11*11 + 1*11 + for_action + for_q_value + some_safety margin
+
+    /*  350 : maximum number of characters in a line 
+                            =
+        11*11 + 11*11 + 1*11 + for_action + for_q_value + some_safety margin */
+    int remainingLength = 350 - length;
     for(int i = 0 ; i < remainingLength-1 ; i ++)
     {
         ss << "]";
@@ -752,6 +768,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
     myfile.open (res.c_str());
     if(myfile.is_open())
     {
+        /* Where do you write the q-values and actions? */
         int flag = 0;
         std::streampos writePos = 0;
         std::string line;
@@ -764,7 +781,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
             int comparable = stateAction_new.compare(stateAction_inFile);
             if(comparable == 0)
             {
-                // already that state action pair in the file...
+                /* State-Action pair already exists in the file */
                 flag = 1;
                 myfile.seekp(writePos);
                 myfile << result;
@@ -774,6 +791,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
         }
         if(!flag)
         {
+            /* Store the result */
             myfile << result;
         }
 
@@ -790,6 +808,7 @@ std::string SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std:
 {
     const WorldModel &wm = agent->world();
 
+    /* Read data and obtain the appropriate action */
     std::ifstream myfile;
     std::stringstream sstm;
     sstm << "state_file" << wm.self().unum() << ".txt";
@@ -803,16 +822,21 @@ std::string SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std:
         std::string action; 
         while(getline(myfile, line))
         {
+            /* -- Parse the lines into positions, actions and q-values -- */
+
+            /* First get positions of all players and the ball */
             int pos = line.find_first_of("]");
             std::string state = line.substr(0,pos+1);
             int comparable = ss.compare(state);
             if(comparable == 0)
             {
-                // this is the one
+                
+                /* Obtain action */
                 int pos2 = line.substr(pos+1,line.size()).find_first_of(":");
                 int pos3 = line.substr(pos+1,line.size()).find_first_of("]");
                 std::string a = line.substr(pos2+1, pos3);
                 
+                /* Obtain q-value */
                 int pos4 = line.substr(pos3+1,line.size()).find_first_of(":");
                 int pos5 = line.substr(pos3+1,line.size()).find_first_of("]");
                 std::string q = line.substr(pos4+1, pos5);
@@ -926,7 +950,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         */
 
     
-    if(agent->config().teamName()=="opp"){
+    if(agent->config().teamName() == "opp"){
         
         Body_GoToPoint( Vector2D(-50,0), 0.0, ServerParam::i().maxDashPower(), -1, 4, true, 60).execute( agent );
         return true;
@@ -949,6 +973,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         //passHeard = false;
         Opponenthasball = false;
     }
+    /* Why the semicolon after else? */
     else{};
         //Opponenthasball = true;
     
@@ -967,19 +992,23 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     //ATTACK STARTS HERE
     // I have the ball, what to do?
 
-    double alpha = 0.5; // importance given to the new learnings
+    double alpha = 0.5;                             // importance given to the new learnings
     
-    std::srand (time(NULL));
-    int random = rand() % 100 + 1; // exploration vs exploitation
+    /* Implementation of q-learning */
+    /* First, we need to play with some order of randomness in order to learn */
+    /* After certain knowledge, we will be able to create a policy and follow it */
 
-    int act, act_arg; // act:action and act_arg : useful for passing (to which player)
+    std::srand (time(NULL));
+    int random = rand() % 100 + 1;                  // exploration vs exploitation
+
+    int act, act_arg;                               // act:action and act_arg : useful for passing (to which player)
     
-    double q_val; // q_value already in the file
-    double *ptr_q_val = &q_val; // pointer to the above
+    double q_val;                                   // q_value already in the file
+    double *ptr_q_val = &q_val;                     // pointer to the above
 
     std::string str = createState(agent);
 
-    std::stringstream prevState ; // current state
+    std::stringstream prevState ;                   // current state
     prevState << str;
 
     if(random <= 30)
@@ -997,7 +1026,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 
         if(act == Pass)
         {
-            act_arg = rand() % 10 + 2; // player to pass to : 2 to 11
+            act_arg = rand() % 10 + 2;              // player to pass to : 2 to 11
         }
         else
         {
@@ -1013,24 +1042,24 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         }
         stateAction << "]";
 
-        q_val = findQ(agent, stateAction.str()); // find if there is a qvalue for that state and action
+        q_val = findQ(agent, stateAction.str());    // find if there is a qvalue for that state and action
 
         if(q_val == -1)
         {
-            // could not open the file....
+            /* Could not open the file */
             return false;
         }
     }
     else
     {
-        // choose action according to policy
+        /* choose action according to policy */
         
         std::string action = chooseAction(agent, ptr_q_val, prevState.str());
         if(action.compare("") == 0)
         {
             return false;
         }
-        int p = action.find_first_of(":"); // pass:i  or move or something else ---> action arg only in pass
+        int p = action.find_first_of(":");          // pass:i  or move or something else ---> action arg only in pass
         if(p == -1)
         {
             act = std::strtod(action.c_str(), NULL);
@@ -1043,7 +1072,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 
         if(ptr_q_val == NULL)
         {
-            // if no such found, then choose an action randomly
+            /* if no such found, then choose an action randomly */
             act = rand() % ACTION_SPACE_SIZE;
             q_val = 0;
         }
@@ -1070,23 +1099,23 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     }
 
     str = createState(agent);
-    std::stringstream newState ;// get new state of the player
+    std::stringstream newState ;                    // get new state of the player
     newState << str;
     
     double reward = obtainReward(agent, prevState.str(), newState.str()); // TODO: obtain reward according to it
 
-    // apply the formula to compute the q value for previous state
+    /* Apply the formula to compute the q value for previous state */
     double q_value, newState_q_value;
     double *ptr_newState_q_value = &newState_q_value;
     chooseAction(agent, ptr_newState_q_value, newState.str()); // gets the maximum q-value for that state
     if(ptr_newState_q_value == NULL)
     {
-        // didn't find the state
+        /* Didn't find the state */
         newState_q_value = 0;
     }
     q_value = (1-alpha)*q_val  + alpha*(reward + newState_q_value);
 
-    // write the new state value to the file
+    /* Write the new state value to the file */
     writeState(agent, prevState.str(), act, act_arg, q_value);
 
     /*
