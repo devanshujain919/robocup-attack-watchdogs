@@ -1081,6 +1081,16 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     //ATTACK STARTS HERE
     // I have the ball, what to do?
 
+    //This is for off the ball movement which attacking, where to go for passes etc.
+    if (!kickable && !Opponenthasball)
+    {   
+        //RunThrough(agent);
+        doMove(this);
+        return true;
+    } 
+
+
+
     double alpha = 0.5;                             // importance given to the new learnings
     
     /* Implementation of q-learning */
@@ -1184,22 +1194,27 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
                             break;
                         }
         case Hold:      {
+                            std::cout << "Holding the ball!!!!" ;
                             Body_HoldBall().execute(agent);
                             break;
                         }
         case Dribble:   {
+                            std::cout << "Dribbling the ball!!!!" ;
                             SampleDribble(agent);
                             break;
                         }
         case Move:      {
+                            std::cout << "Moving the agent!!!!" ;
                             SampleMove(agent);
                             break;
                         }
         case Intercept: {
+                            std::cout << "Intercepting the ball!!!!" ;
                             Body_Intercept().execute( agent );
                             break;
                         }
         case Goal:      {
+                            std::cout << "Shooting the ball!!!!" ;
                             Bhv_Shoot().execute(agent);
                             break;
                         }
@@ -1228,26 +1243,8 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 
     /* Write the new state value to the file */
     writeState(agent, prevState.str(), act, act_arg, q_value);
-
+    
     /*
-    if ( kickable && !Opponenthasball)
-    {
-        doKick( this);
-        //const PlayerPtrCont &teammates = agent->world().teammatesFromSelf();
-
-        //const PlayerObject * nearest_mate = (teammates.empty() ? static_cast<PlayerObject *>(0) : teammates.front());
-
-        //SamplePass(agent, nearest_mate);
-        //GiveThrough(agent, nearest_mate);
-    }
-
-    //This is for off the ball movement which attacking, where to go for passes etc.
-    else if (!kickable && !Opponenthasball)
-    {   
-        //RunThrough(agent);
-        doMove(this);
-        return true;
-    } 
     //ATTACK ENDS HERE
     //--------XX----------XX--------//
     // DEFENCE STARTS HERE
