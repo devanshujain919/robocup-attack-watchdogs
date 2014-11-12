@@ -72,6 +72,7 @@ private:
 
 public:
 
+    /* We have six possible actions */
     enum Action {Pass, Hold, Dribble, Move, Goal, Intercept, ACTION_SPACE_SIZE};
 
     SamplePlayer();
