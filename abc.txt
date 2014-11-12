@@ -1,7 +1,0 @@
-make  all-recursive
-make[1]: Entering directory `/home/devanshu/Documents/soccer-simulation-2d/source/watchdogs_20120113_201201147_201201219'
-Making all in src
-make[2]: Entering directory `/home/devanshu/Documents/soccer-simulation-2d/source/watchdogs_20120113_201201147_201201219/src'
-g++ -DHAVE_CONFIG_H -I. -I..  -I../src  -I../src/chain_action -I/usr/include -W -Wall -g -O2 -MT sample_player-sample_player.o -MD -MP -MF .deps/sample_player-sample_player.Tpo -c -o sample_player-sample_player.o `test -f 'sample_player.cpp' || echo './'`sample_player.cpp
-make[2]: Leaving directory `/home/devanshu/Documents/soccer-simulation-2d/source/watchdogs_20120113_201201147_201201219/src'
-make[1]: Leaving directory `/home/devanshu/Documents/soccer-simulation-2d/source/watchdogs_20120113_201201147_201201219'

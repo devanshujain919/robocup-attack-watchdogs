@@ -1,0 +1,240 @@
+\documentclass[conference,letterpaper]{IEEEtran}
+
+\usepackage{subcaption}
+\usepackage{fixltx2e}
+\usepackage{gensymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{chapterbib}
+\usepackage{hyperref}
+\usepackage{fixltx2e}
+\usepackage{tabularx}
+\usepackage{lscape}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{url}
+\usepackage{multicol}
+\usepackage{color}
+\usepackage{fancyhdr}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage[colorinlistoftodos]{todonotes}
+
+%% use this for zero \parindent and non-zero \parskip, intelligently.
+\usepackage{parskip}
+
+%% the 'caption' package provides a nicer-looking replacement
+\usepackage[labelfont=bf,textfont=it]{caption}
+
+\usepackage{url}
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% paper 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% can use linebreaks \\ within to get better formatting as desired
+
+\title{WatchDogs 2D Soccer Simulation \\Team Description Paper 2014}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% author names and affiliations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% option 1)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% use a multiple column layout for up to three different
+% affiliations
+
+\author{\IEEEauthorblockN{Devanshu Jain}
+%Department of affiliation should be in italics for UKSim 
+\IEEEauthorblockA{\textit{Dept. of Information and Communication Technology}\\
+DA-IICT\\
+Gandhinagar, Gujarat, India\\
+devanshu.jain919@gmail.com}
+\and
+\IEEEauthorblockN{Miten Shah}
+\IEEEauthorblockA{\textit{Dept. of Information and Communication Technology}\\
+DA-IICT\\
+Gandhinagar, Gujarat, India\\
+ninjamiten@gmail.com}
+\and
+\IEEEauthorblockN{Bharatkumar Garg}
+\IEEEauthorblockA{\textit{Dept. of Information and Communication Technology}\\
+DA-IICT\\
+Gandhinagar, Gujarat, India\\
+kumarbharatgarg@gmail.com}
+}
+
+\maketitle
+
+\begin{abstract}
+
+The paper describes the fundamental tactics used by human teams while playing actually soccer and how learning can be implemented to that to make the agents intelligent and competent. The Robosoccer is a multi-agent adverserial game in a stochastic environment. The features make the environment suitable for Markov Decision Process(MDP) to come in. We use MDP for agent learning and attain an optimal policy.
+
+Robosoccer aims to be a worldwide platform for research in artificial intelligence in multi-agent systems. The reasons for this seems to be that firstly football is the most popular sport in the world and secondly there is complexity and uncertainty involved. We aim to improve upon HELIOS base code\cite{akiyama2014helios} to create our own competitive team. We describe about the artificial intelligence strategy and football tactics which will be implemented in our agent.
+
+\end{abstract}
+
+\begin{keywords}
+artificial intelligence, robosoccer, markov decision process
+\end{keywords}
+
+
+\section{\textbf{Introduction}}
+
+At any state in the game, our motive can be accomplished with an nondeterministic probability. For example, our aim to shoot may end up
+
+\begin{enumerate}
+\item being a goal
+\item being blocked by defender
+\item miss the goal
+\end{enumerate}
+
+Same is the case for a pass (successful/interfered), a dribble (successful/lost), etc. Therefore, we can say that some uncertain probability is associated with each action. The question therefore arises: “What is the most fruitful decision? How to decide which action to take when we are also unaware of the probabilities of success of each action?”.
+
+Thus in our opinion, the best and the most intuitive option that comes to mind to accommodate such stochastic kind of outcomes in the game is to model our strategy as a Markov Decision Process\cite{puterman2009markov}.
+
+MDP states that the effects of an action taken in a state is only dependent on its present state and not the past or future states. Also, we can use Reinforcement Learning (RL) to successfully solve the MDP by coming up with a close to optimum policy. The RL technique used will be Q-Learning\cite{duan2007application}. Also, MDP based decision making is used by Brainstormers\cite{riedmiller2005brainstormers}\cite{brainstormers} (3-time RoboCup 2D champions).
+
+\section{\textbf{Implementation}}
+The states required to implement an MDP include 
+\begin{enumerate}
+\item The coordinate of the player
+\item The possession of the ball, i.e. with the player or with the team or with opposition
+\item The current scoreline
+\item The time remaining
+\end{enumerate}
+\subsection{\bf{Passing}}
+Currently we have implemented a simple passing implementation wherein we obtain the coordinates of the player to be passed to and then implement the kick() function in that direction with maximum power.\\
+
+There are three main factors affecting the decision of pass to a teammate during normal play.
+\begin{enumerate}
+\item The distance between the teammates
+\item The forwardness of the receiver with respect to other teammates
+\item How clear the pass is; which depends on how many opponent players are marking the teammates and how many are able to intercept the pass
+\end{enumerate}
+
+When a team member is in possession of the ball and there is no possibility to dribble or shoot, he has the option to pass. There are 10 teammates to which the player can pass to. To make the best decision, we iterate over the situation of passing the ball to each teammate. In each such iteration we check the forwardness of the teammate and how clear is it to pass it. The best receiver should have a balance between forwardness and clarity.
+
+\begin{algorithm}[H]
+\caption{Passing Decision}\label{pass}
+\begin{algorithmic}[1]
+\Procedure{PassTo}{}
+\For {$i \gets 1, 10$}
+\State $d \gets distance(self, P_{i})$
+\State $f \gets y_{coordinate}(P_{i})$
+\State $disturb \gets MARKING(P_{i}) + INTERCEPTABLE(self, P_{i})$
+\State $result = f / disturb$
+\EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Marking}\label{mark}
+\begin{algorithmic}[1]
+\State $threshold \gets value$
+\Procedure{Marking}{Player}
+\For {$i \gets 1, 11$}
+\State $sum \gets 0$
+\If {$distance(P, O_{i}) \le threshold$}
+\State $sum \gets sum + 1$
+\EndIf
+\EndFor
+\State \textbf{return} $sum$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Interceptability}\label{intec}
+\begin{algorithmic}[1]
+\Procedure{Interceptable}{Player1, Player2}
+\State $diameter \gets distance(Player1, Player2)$
+\State $radius \gets diameter / 2$
+\State $center \gets (coor_{Player1} + coor_{Player2}) / 2$
+\For {$i \gets 1, 11$}
+\State $sum \gets 0$
+\If {$distance(center, O_{i}) \le radius$}
+\State $sum \gets sum + 1$
+\EndIf
+\EndFor
+\State \textbf{return} $sum$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+	
+\subsection{\bf{Through Passing}}
+We have implemented a basic through pass where in we kick the ball with maximum power in the direction horizontally ahead of the player to be passed in such a way that the team mate reaches to it first in his movement before any opponent.
+
+There are three main factors affecting the decision to through pass during normal play.
+\begin{enumerate}
+\item No clear pass
+\item A teammate running into an empty zone
+\item No obstruction
+\item Resulting pass should be most forward
+\end{enumerate}
+
+\begin{algorithm}[H]
+\caption{Through Pass Decision}\label{thrupass}
+\begin{algorithmic}[1]
+\Procedure{ThroughPassTo}{}
+\For {$i \gets 1, 10$}
+\If {$P_{i}.RUNNING?$ equals $True$}
+\State $center \gets coor_{P_{i}}$
+\State $radius \gets distance(self, center)$
+\State $sum \gets 0$
+\For {$j \gets 1, 11$}
+\If {$distance(O_{j}, center) \le radius$}
+\State $sum \gets sum + 1$
+\EndIf
+\EndFor
+\EndIf
+\EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{\bf{Dribbling}}
+If player is in the opponent half and the region ahead is empty then hit the ball farther and chase it. If the player is in a slightly vulnerable or congested zone, the player will hit the ball with low power and chase it ahead. Long dribbles will generally be used in the wide areas or flanks where we expect very little opposition.
+
+\begin{algorithm}[H]
+\caption{Dribble Decision}\label{dribble}
+\begin{algorithmic}[1]
+\State $radus \gets value$
+\Procedure{Dribble}{}
+\For {$i \gets 0, 11$}
+\If {$distance(self, O_{i}) \ge radius$}
+\State $LONGDRIBBLE$
+\Else
+\State $SHORTDRIBBLE$
+\EndIf
+\EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\section{\textbf{Soccer Tactics}}
+
+Our tactics and formations will be dynamic and very much based on the situation and timing.
+
+\subsection{\bf{Formation}}
+
+We shall start with a 4-4-2 starting lineup. 
+The formation may start changing based on the current scoreline. For example, if the team is down by a certain threshold margin, it may change to a more attacking formation such as 3-3-4. On the contrary, if the team is up by a certain threshold margin, it may change to a more defensive formation such as 5-4-1.
+
+
+\subsection{\bf{Defense}}
+
+The defense should be moderately deep. The width should be based on the width of the opponent attack. The defenders should man-mark smartly such that any point of time they should not cluster together, therefore implying some zonal defending. We may implement that by assigning all but one defenders to man-mark and the other may occupy certain vulnerable positions. The pressure level of the defenders will very much depend on the scoreline, time and stamina.
+
+\subsection{\bf{Attack}}
+
+The attack will be a pass and move one. If the attack starts from the middle, there will be more focus on executing a through pass on the sides. If the attack starts from the wings, there will be dribbling and an element of switching the play by passing the ball to the teammate on the other side of the field to catch out man marking defenses. The main attack strategy would be to reach near the penalty area of the opponent and try to get in from the sides or pass it to a free teammate with a clear shot on goal. If the team is up by a comfortable margin, it will try to keep long possession of the ball on the opponent’s half through continuous triangular movement and play out the game.
+
+
+\bibliographystyle{ieeetr} 
+\bibliography{biblio}
+\end{document}

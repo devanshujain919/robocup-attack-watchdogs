@@ -81,6 +81,7 @@
 #include <rcsc/action/body_dribble.h>
 #include <rcsc/action/body_hold_ball.h>
 #include <rcsc/action/body_pass.h>
+#include <rcsc/action/bhv_shoot.h>
 #include <rcsc/action/neck_scan_field.h>
 #include <rcsc/action/neck_turn_to_low_conf_teammate.h>
 #include <rcsc/common/basic_client.h>
@@ -880,10 +881,82 @@ SamplePlayer::findQ( PlayerAgent *agent, std::string stateAction )
 }
 
 double
-SamplePlayer::obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState)
+SamplePlayer::obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState, int action)
 {
     //TODO
+    if(action == Pass)
+    {
+
+    }
+    if(action == Goal)
+    {
+
+    }
+    if(action == Intercept)
+    {
+
+    }
+    if(action == Hold)
+    {
+
+    }
+    if(action == Dribble)
+    {
+
+    }
+    if(action == Move)
+    {
+
+    }
     return 0;
+}
+
+bool
+SamplePlayer::SampleMove(rcsc::PlayerAgent *agent)
+{
+    const WorldModel &wm = agent->world();
+
+    Vector2D v; // store the resultant vector
+    int count = 0;
+
+    const PlayerPtrCont & opps = wm.opponentsFromSelf();
+    const PlayerPtrCont::const_iterator end = opps.end();
+    for(PlayerPtrCont::const_iterator it = opps.begin() ; it != end ; ++it)
+    {
+        const Vector2D &u = (*it)->rpos();
+        v = v - (u/(u.norm2()));
+        count ++;
+    }
+
+    const PlayerPtrCont & team = wm.teammatesFromSelf();
+    const PlayerPtrCont::const_iterator end2 = team.end();
+    for(PlayerPtrCont::const_iterator it = team.begin() ; it != end2 ; ++it)
+    {
+        const Vector2D &u = (*it)->rpos();
+        v = v - (u/(u.norm2()));
+        count ++;
+    }
+
+    v = v/count;
+    
+    const Vector2D &u = wm.ball().rpos();
+    v = v + (u/(u.norm2()));
+
+    Vector2D p = ServerParam::i().theirTeamGoalPos();
+    Vector2D myPos = wm.self().pos();
+    Vector2D rpos = p - myPos;
+    v = v + (rpos/rpos.norm2());
+
+    Body_GoToPoint( myPos + v, 0.5, ServerParam::i().maxDashPower()).execute(agent);
+
+    return true;
+}
+
+bool 
+SamplePlayer::SampleGoal(rcsc::PlayerAgent *agent)
+{
+
+    return false;
 }
 
 //main function that will be used.
@@ -1051,29 +1124,51 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
 
     // TODO: here execute the action
 
+    if(act == Pass)
+    {
+        std::cout << "pass";
+    }
+
     switch(act)
     {
-        case Pass:      
-                        break;
-        case Hold:      
-                        break;
-        case Dribble:   
-                        break;
-        case Move:      
-                        break;
-        case Intercept: 
-                        break;
-        case Goal:      
-                        break;
-        default:        
-                        break;
+        case Pass:      {
+                            Vector2D pass_point;
+                            Body_Pass::get_best_pass( agent->world(), &pass_point, NULL, NULL );
+                            Body_Pass().execute(agent);
+                            std::cout << "Passed the ball to point: " << pass_point ;
+                            break;
+                        }
+        case Hold:      {
+                            Body_HoldBall().execute(agent);
+                            break;
+                        }
+        case Dribble:   {
+                            SampleDribble(agent);
+                            break;
+                        }
+        case Move:      {
+                            SampleMove(agent);
+                            break;
+                        }
+        case Intercept: {
+                            Body_Intercept().execute( agent );
+                            break;
+                        }
+        case Goal:      {
+                            Bhv_Shoot().execute(agent);
+                            break;
+                        }
+        default:        {
+                            std::cout << "Wrong action!!!!!!!!!!!!!!" ;
+                            break;
+                        }
     }
 
     str = createState(agent);
     std::stringstream newState ;// get new state of the player
     newState << str;
     
-    double reward = obtainReward(agent, prevState.str(), newState.str()); // TODO: obtain reward according to it
+    double reward = obtainReward(agent, prevState.str(), newState.str(), act); // TODO: obtain reward according to it
 
     // apply the formula to compute the q value for previous state
     double q_value, newState_q_value;

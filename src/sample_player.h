@@ -245,13 +245,19 @@ public:
     readStateForQLearning(rcsc::PlayerAgent *agent);
 
     double
-    obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState);
+    obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState, int action);
 
     std::string
     createState(rcsc::PlayerAgent *agent);
 
     double
     findQ( rcsc::PlayerAgent *agent, std::string stateAction );
+
+    bool
+    SampleMove(rcsc::PlayerAgent *agent);
+
+    bool 
+    SampleGoal(rcsc::PlayerAgent *agent);
 
 private:
     double getDashPower( const rcsc::PlayerAgent * agent );

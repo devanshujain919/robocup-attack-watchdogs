@@ -452,6 +452,9 @@ sample_player-sample_player.o: sample_player.cpp \
  /usr/local/include/rcsc/action/body_advance_ball.h \
  /usr/local/include/rcsc/action/body_advance_ball2009.h \
  /usr/local/include/rcsc/action/body_pass.h \
+ /usr/local/include/rcsc/action/bhv_shoot.h \
+ /usr/local/include/rcsc/action/bhv_shoot2008.h \
+ /usr/local/include/rcsc/action/shoot_table2008.h \
  /usr/local/include/rcsc/common/basic_client.h \
  /usr/local/include/rcsc/common/player_param.h \
  /usr/local/include/rcsc/common/audio_memory.h \
@@ -1847,6 +1850,12 @@ intention_receive.h:
 /usr/local/include/rcsc/action/body_advance_ball2009.h:
 
 /usr/local/include/rcsc/action/body_pass.h:
+
+/usr/local/include/rcsc/action/bhv_shoot.h:
+
+/usr/local/include/rcsc/action/bhv_shoot2008.h:
+
+/usr/local/include/rcsc/action/shoot_table2008.h:
 
 /usr/local/include/rcsc/common/basic_client.h:
 
