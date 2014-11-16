@@ -731,6 +731,9 @@ SamplePlayer::createState(PlayerAgent *agent)
 void 
 SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, int action_arg, double q_value)
 {
+
+    std::cout << "----------------------> Writing <------------------------" ;
+
     const WorldModel &wm = agent->world();
 
     /* Write the recorded states to a file */
@@ -769,7 +772,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
     std::stringstream sstm;
     sstm << "state_file" << wm.self().unum() << ".txt";
     std::string res = sstm.str();
-    myfile.open (res.c_str());
+    myfile.open (res.c_str(), std::fstream::in | std::fstream::out);
     if(myfile.is_open())
     {
 
@@ -778,6 +781,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
         std::string line;
         while(getline(myfile, line))
         {
+            std::cout << "--------------------------------> SEARCHING <------------------------------------" ;
             int p = line.find_first_of("]");
             int p2 = line.substr(p+1, line.size()).find_first_of("]");
             std::string stateAction_inFile = line.substr(0, p2+1);
@@ -826,6 +830,9 @@ std::string SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std:
         std::string action; 
         while(getline(myfile, line))
         {
+
+            std::cout << "----------------------> Choosing the action <---------------------------" ;
+
             /* -- Parse the lines into positions, actions and q-values -- */
 
             /* First get positions of all players and the ball */
@@ -1089,8 +1096,6 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         return true;
     } 
 
-
-
     double alpha = 0.5;                             // importance given to the new learnings
     
     /* Implementation of q-learning */
@@ -1114,13 +1119,13 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     {
         // do random action
 
-        if(!Opponenthasball)
+        if(kickable && !Opponenthasball)
         {
-            act = rand() % (ACTION_SPACE_SIZE-1);  // don't consider intercept if we have the ball...
+            act = rand() % 4 + 1; // action ball possession
         }
-        else
+        if(!kickable && Opponenthasball)
         {
-            act = rand() % ACTION_SPACE_SIZE;
+            act = rand() % 2 + 5; // action no ball possession
         }
 
         if(act == Pass)
@@ -1172,8 +1177,23 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         if(ptr_q_val == NULL)
         {
             /* if no such found, then choose an action randomly */
-            act = rand() % ACTION_SPACE_SIZE;
-            q_val = 0;
+            if(kickable && !Opponenthasball)
+            {
+                act = rand() % 4 + 1; // action ball possession
+            }
+            if(!kickable && Opponenthasball)
+            {
+                act = rand() % 2 + 5; // action no ball possession
+            }
+
+            if(act == Pass)
+            {
+                act_arg = rand() % 10 + 2;              // player to pass to : 2 to 11
+            }
+            else
+            {
+                act_arg = -1;
+            }
         }
     }
 
@@ -1184,44 +1204,64 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         std::cout << "pass";
     }
 
-    switch(act)
+    if(kickable && !Opponenthasball)
     {
-        case Pass:      {
-                            Vector2D pass_point;
-                            Body_Pass::get_best_pass( agent->world(), &pass_point, NULL, NULL );
-                            Body_Pass().execute(agent);
-                            std::cout << "Passed the ball to point: " << pass_point ;
-                            break;
-                        }
-        case Hold:      {
-                            std::cout << "Holding the ball!!!!" ;
-                            Body_HoldBall().execute(agent);
-                            break;
-                        }
-        case Dribble:   {
-                            std::cout << "Dribbling the ball!!!!" ;
-                            SampleDribble(agent);
-                            break;
-                        }
-        case Move:      {
-                            std::cout << "Moving the agent!!!!" ;
-                            SampleMove(agent);
-                            break;
-                        }
-        case Intercept: {
-                            std::cout << "Intercepting the ball!!!!" ;
-                            Body_Intercept().execute( agent );
-                            break;
-                        }
-        case Goal:      {
-                            std::cout << "Shooting the ball!!!!" ;
-                            Bhv_Shoot().execute(agent);
-                            break;
-                        }
-        default:        {
-                            std::cout << "Wrong action!!!!!!!!!!!!!!" ;
-                            break;
-                        }
+
+        switch(act)
+        {
+            case Pass:      {
+                                Vector2D pass_point;
+                                Body_Pass::get_best_pass( agent->world(), &pass_point, NULL, NULL );
+                                Body_Pass().execute(agent);
+                                std::cout << "Passed the ball to point: " << pass_point ;
+                                break;
+                            }
+            case Hold:      {
+                                std::cout << "Holding the ball!!!!" ;
+                                Body_HoldBall().execute(agent);
+                                break;
+                            }
+            case Dribble:   {
+                                std::cout << "Dribbling the ball!!!!" ;
+                                SampleDribble(agent);
+                                break;
+                            }
+            case Goal:      {
+                                std::cout << "Shooting the ball!!!!" ;
+                                Vector2D ball_pos = wm.ball().pos();
+                                Body_GoToPoint( ball_pos, 0.5, ServerParam::i().maxDashPower()).execute(agent);
+                                Bhv_Shoot().execute(agent);
+                                break;
+                            }
+            default:        {
+                                std::cout << "Wrong action!!!!!!!!!!!!!!" ;
+                                break;
+                            }
+        }
+
+    }
+
+    if(!kickable && Opponenthasball)
+    {
+
+        switch(act)
+        {
+            case Move:      {
+                                std::cout << "Moving the agent!!!!" ;
+                                SampleMove(agent);
+                                break;
+                            }
+            case Intercept: {
+                                Body_Intercept().execute( agent );
+                                agent->setNeckAction( new Neck_OffensiveInterceptNeck() );
+                                break;
+                            }
+            default:        {
+                                std::cout << "Wrong action!!!!!!!!!!!!!!" ;
+                                break;
+                            }
+        }
+        
     }
 
     str = createState(agent);
@@ -1242,6 +1282,8 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     q_value = (1-alpha)*q_val  + alpha*(reward + newState_q_value);
 
     /* Write the new state value to the file */
+
+    std::cout << "-------------------------------->Writing to the file <-----------------------------------------------" ;
     writeState(agent, prevState.str(), act, act_arg, q_value);
     
     /*

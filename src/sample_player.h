@@ -73,8 +73,19 @@ private:
 public:
 
     /* We have six possible actions */
-    enum Action {Pass, Hold, Dribble, Move, Goal, Intercept, ACTION_SPACE_SIZE};
 
+    enum Action {Pass=1, Hold, Dribble, Goal, Move=5, Intercept};
+
+    /*int Pass = 1;
+    int Hold = 2;
+    int Dribble = 3;
+    int Goal = 4;
+    int Move = 5;
+    int Intercept = 6;
+
+    int ballPossession[4] = {Pass, Hold, Dribble, Goal};
+    int noBallPossession[2] = {Move, Intercept};
+*/
     SamplePlayer();
 
     virtual
