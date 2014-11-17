@@ -751,7 +751,9 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
     std::string stateAction_new = ss.str();
 
     /* Write the q-value */
-    ss << "[Q:" << q_value << "]";
+    int p = q_value * 100;
+    float q = p/100;
+    ss << "[Q:" << q << "]";
 
     std::string result = ss.str();
     int length = result.length();
@@ -770,7 +772,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
     std::cout << "Writing to the file\n";
     std::fstream myfile;
     std::stringstream sstm;
-    sstm << "state_file" << wm.self().unum() << ".txt";
+    sstm << "state_" << wm.self().unum() << ".txt";
     std::string res = sstm.str();
     myfile.open (res.c_str(), std::fstream::in | std::fstream::out);
     if(myfile.is_open())
@@ -805,6 +807,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
 
         myfile.flush();
         myfile.close();
+        std::cout << "Written to the file " << res << "\n" << "Text is : " << result << "\n\n";
     }
     else
     {
@@ -819,15 +822,15 @@ std::string SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std:
     /* Read data and obtain the appropriate action */
     std::ifstream myfile;
     std::stringstream sstm;
-    sstm << "state_file" << wm.self().unum() << ".txt";
+    sstm << "state_" << wm.self().unum() << ".txt";
     std::string res = sstm.str();
     myfile.open (res.c_str());
     if(myfile.is_open())
     {
         std::string line;
         int flag = 0;
-        double maxQ;
-        std::string action; 
+        double maxQ = 0;
+        std::string action = "NULL"; 
         while(getline(myfile, line))
         {
 
@@ -872,11 +875,23 @@ std::string SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std:
                 }
             }
         }
-        *q_value = maxQ;
-        return action;
+        if(!flag)
+        {
+            q_value = NULL;
+            return "NULL";
+        }
+        else
+        {   
+            *q_value = maxQ;
+            return action;
+        }
     }
-    q_value = NULL;
-    return "";
+    else
+    {
+        std::cout << "making it null\n\n\n";
+        q_value = NULL;
+        return "NULL";
+    }
 }
 
 double
@@ -887,7 +902,7 @@ SamplePlayer::findQ( PlayerAgent *agent, std::string stateAction )
     /* Finding the q-value from the file given the agent and state-action */
     std::ifstream myfile;
     std::stringstream sstm;
-    sstm << "state_file" << wm.self().unum() << ".txt";
+    sstm << "state_" << wm.self().unum() << ".txt";
     std::string res = sstm.str();
     myfile.open (res.c_str());
     if(myfile.is_open())
@@ -909,10 +924,12 @@ SamplePlayer::findQ( PlayerAgent *agent, std::string stateAction )
                 break;
             }
         }
-
         return q_val;
     }
-    return -1;   
+    else
+    {
+        return 0;
+    }   
 }
 
 double
@@ -1010,7 +1027,8 @@ SamplePlayer::SampleGoal(rcsc::PlayerAgent *agent)
 
 bool
 SamplePlayer::executeSampleRole( PlayerAgent * agent )
-{   
+{
+    const WorldModel &wm = agent->world();
 
     /*
             Body_GoToPoint: rcsc/action/body_gotopoint
@@ -1118,6 +1136,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     if(random <= 30)
     {
         // do random action
+        std::cout << "I am choosing some random action \n\n\n";
 
         if(kickable && !Opponenthasball)
         {
@@ -1151,31 +1170,26 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         if(q_val == -1)
         {
             /* Could not open the file */
+            std::cout << "Its NULL \n\n\n";
             return false;
         }
+
     }
     else
     {
         /* choose action according to policy */
+
+        std::cout << "I am choosing some meaningful action Q-learning\n\n\n";
         
         std::string action = chooseAction(agent, ptr_q_val, prevState.str());
         if(action.compare("") == 0)
         {
+            std::cout << "Some error in opening files \n\n\n";
             return false;
         }
-        int p = action.find_first_of(":");          // pass:i  or move or something else ---> action arg only in pass
-        if(p == -1)
+        if(action.compare("NULL") == 0)
         {
-            act = std::strtod(action.c_str(), NULL);
-        }    
-        else
-        {
-            act = std::strtod(action.substr(0, p+1).c_str(), NULL);
-            act_arg = std::strtod(action.substr(p+1, action.size()).c_str(), NULL);
-        }
-
-        if(ptr_q_val == NULL)
-        {
+            std::cout << "nothing choosen, now taking some random\n\n\n";
             /* if no such found, then choose an action randomly */
             if(kickable && !Opponenthasball)
             {
@@ -1193,6 +1207,21 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
             else
             {
                 act_arg = -1;
+            }
+
+            std::cout << "After a lot of deliberation, action choosen: " << act << " with arg as : " << act_arg << "\n\n\n";
+        }
+        else
+        {
+            int p = action.find_first_of(":");          // pass:i  or move or something else ---> action arg only in pass
+            if(p == -1)
+            {
+                act = std::strtod(action.c_str(), NULL);
+            }    
+            else
+            {
+                act = std::strtod(action.substr(0, p+1).c_str(), NULL);
+                act_arg = std::strtod(action.substr(p+1, action.size()).c_str(), NULL);
             }
         }
     }
@@ -1213,6 +1242,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
                                 Vector2D pass_point;
                                 Body_Pass::get_best_pass( agent->world(), &pass_point, NULL, NULL );
                                 Body_Pass().execute(agent);
+                                agent->setNeckAction( new Neck_TurnToLowConfTeammate() );
                                 std::cout << "Passed the ball to point: " << pass_point ;
                                 break;
                             }
@@ -1234,7 +1264,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
                                 break;
                             }
             default:        {
-                                std::cout << "Wrong action!!!!!!!!!!!!!!" ;
+                                std::cout << "Wrong action!!!!!!!!!!!!!! action choosed = " << act ;
                                 break;
                             }
         }
@@ -1257,17 +1287,19 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
                                 break;
                             }
             default:        {
-                                std::cout << "Wrong action!!!!!!!!!!!!!!" ;
+                                std::cout << "Wrong action!!!!!!!!!!!!!!action choosed = " << act ;
                                 break;
                             }
         }
         
     }
 
+    std::cout << "Creating the state\n\n\n";
     str = createState(agent);
     std::stringstream newState ;                    // get new state of the player
     newState << str;
     
+    std::cout << "Obtaining reward\n\n\n";
     double reward = obtainReward(agent, prevState.str(), newState.str(), act); // TODO: obtain reward according to it
 
     /* Apply the formula to compute the q value for previous state */
@@ -1279,6 +1311,8 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         /* Didn't find the state */
         newState_q_value = 0;
     }
+
+    std::cout << "Calculating\n\n\n";
     q_value = (1-alpha)*q_val  + alpha*(reward + newState_q_value);
 
     /* Write the new state value to the file */
