@@ -760,7 +760,8 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
 
     /*  350 : maximum number of characters in a line 
                             =
-        11*11 + 11*11 + 1*11 + for_action + for_q_value + some_safety margin */
+        11*11 + 11*11 + 1*11 + for_action + for_q_value + some_safety margin 
+    */
     int remainingLength = 350 - length;
     for(int i = 0 ; i < remainingLength-1 ; i ++)
     {
@@ -769,50 +770,67 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
     ss << "\n";
     result = ss.str();
 
-    std::cout << "Writing to the file\n";
+    std::cout << "Writing to the file hahahahahahahahaha!!!!!\n";
     std::fstream myfile;
+        
     std::stringstream sstm;
     sstm << "state_" << wm.self().unum() << ".txt";
     std::string res = sstm.str();
-    myfile.open (res.c_str(), std::fstream::in | std::fstream::out);
-    if(myfile.is_open())
+    myfile.open (res.c_str(), std::ios::in);
+        
+    if(!myfile.is_open())
     {
+        std::cout << "error opening the file for search!!!\n\n\n";
+        return ;
+    }
+    int flag = 0;
+    std::streampos writePos = 0;
+    std::string line;
+    char line_file[351];
+    std::cout << "Comparing it with : " << stateAction_new << "in file : " << res << "\n\n\n";
+    int pq = 1;
+    myfile.seekg(0);
+    while(myfile.getline(line_file, 351)) // error in this statement not able to read...
+    {
+        line = std::string(line_file);
+        std::cout << "Read the line in side the while loop: " << line_file << "\n\n\n";
+        std::cout << "--------------------------------> SEARCHING <------------------------------------" ;
+        int p = line.find_first_of("]");
+        int p2 = line.substr(p+1, line.size()).find_first_of("]");
+        std::string stateAction_inFile = line.substr(0, p2+1);
 
-        int flag = 0;
-        std::streampos writePos = 0;
-        std::string line;
-        while(getline(myfile, line))
+        int comparable = stateAction_new.compare(stateAction_inFile);
+        if(comparable == 0)
         {
-            std::cout << "--------------------------------> SEARCHING <------------------------------------" ;
-            int p = line.find_first_of("]");
-            int p2 = line.substr(p+1, line.size()).find_first_of("]");
-            std::string stateAction_inFile = line.substr(0, p2+1);
-
-            int comparable = stateAction_new.compare(stateAction_inFile);
-            if(comparable == 0)
-            {
-                /* State-Action pair already exists in the file */
-                flag = 1;
-                myfile.seekp(writePos);
-                myfile << result;
-                break;
-            }
-            writePos = myfile.tellg();
+            /* State-Action pair already exists in the file */
+            std::cout << "Its true!!!\n\n\n";
+            flag = 1;
+            break;
         }
-        if(!flag)
-        {
-            /* Store the result */
-            myfile << result;
-        }
+        writePos = myfile.tellg();
+    }
+    myfile.close();
 
-        myfile.flush();
+    std::cout << "Read the line: " << line_file << "\n\n\n";
+
+    if(flag == 1)
+    {
+        std::cout << "I found it in the file !!! at position: " << writePos << "\n\n\n";
+        myfile.open (res.c_str(), std::ios::out);
+        myfile.seekp(writePos);
+        myfile << result ;
         myfile.close();
-        std::cout << "Written to the file " << res << "\n" << "Text is : " << result << "\n\n";
     }
     else
     {
-        std::cout << "Couldn't open the file...\n";
+        std::cout << "I have to append to the file !!! at position: " << writePos << "\n\n\n";
+        myfile.open (res.c_str(), std::ios::out | std::ios::app);
+        myfile << result ;
+        myfile.close();
     }
+
+    std::cout << "Written to the file " << res << "\n" << "Text is : " << result << "\n\n";
+
 }
 
 std::string SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std::string ss)
@@ -824,7 +842,7 @@ std::string SamplePlayer::chooseAction(PlayerAgent *agent, double *q_value, std:
     std::stringstream sstm;
     sstm << "state_" << wm.self().unum() << ".txt";
     std::string res = sstm.str();
-    myfile.open (res.c_str());
+    myfile.open (res.c_str(), std::ios::in);
     if(myfile.is_open())
     {
         std::string line;
@@ -904,7 +922,7 @@ SamplePlayer::findQ( PlayerAgent *agent, std::string stateAction )
     std::stringstream sstm;
     sstm << "state_" << wm.self().unum() << ".txt";
     std::string res = sstm.str();
-    myfile.open (res.c_str());
+    myfile.open (res.c_str(), std::ios::in);
     if(myfile.is_open())
     {
         std::string line;

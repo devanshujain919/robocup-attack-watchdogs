@@ -30,3 +30,14 @@
 # Files
 *.txt
 
+# papers
+*.aux
+*.sty
+*.cls
+*.log
+*.out
+*.tex
+*.bib
+*.bib~
+*.cls~
+/TDP/latex/
