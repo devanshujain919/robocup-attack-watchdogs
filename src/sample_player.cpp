@@ -1034,13 +1034,6 @@ SamplePlayer::SampleMove(rcsc::PlayerAgent *agent)
     return true;
 }
 
-bool 
-SamplePlayer::SampleGoal(rcsc::PlayerAgent *agent)
-{
-
-    return false;
-}
-
 //main function that will be used.
 
 bool
@@ -1138,7 +1131,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     /* First, we need to play with some order of randomness in order to learn */
     /* After certain knowledge, we will be able to create a policy and follow it */
 
-    std::srand (time(NULL));
+    std::srand (time(NULL));create state for the agent
     int random = rand() % 100 + 1;                  // exploration vs exploitation
 
     int act, act_arg;                               // act:action and act_arg : useful for passing (to which player)
