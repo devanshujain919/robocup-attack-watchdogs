@@ -257,7 +257,7 @@ public:
     readStateForQLearning(rcsc::PlayerAgent *agent);
 
     double
-    obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState, int action);
+    obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState, int action, bool team_has_ball, bool opponent_has_ball);
 
     std::string
     createState(rcsc::PlayerAgent *agent);

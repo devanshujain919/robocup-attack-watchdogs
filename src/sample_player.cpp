@@ -951,45 +951,187 @@ SamplePlayer::findQ( PlayerAgent *agent, std::string stateAction )
 }
 
 double
-SamplePlayer::obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState, int action)
+SamplePlayer::obtainReward(rcsc::PlayerAgent *agent, std::string prevState, std::string newState, int action, bool prev_team_has_ball, bool prev_opponent_has_ball)
 {
     //TODO
-    if(action == Pass)
-    {
+    const WorldModel & wm = this->world();
 
-    }
-    if(action == Goal)
-    {
+    int side = wm.gameMode().side();
+    int time_passed = wm.gameMode().time().cycle();
+    int totalTime = ServerParam::i().DEFAULT_HALF_TIME * 2;
+    int scoreLeft = wm.gameMode().scoreLeft();
+    int scoreRight = wm.gameMode().scoreRight();
+    int scoreline = scoreLeft - scoreRight;
 
-    }
-    if(action == Intercept)
-    {
+    /*enum SideID {
+        LEFT = 1,
+        NEUTRAL = 0,
+        RIGHT = -1,
+    };
 
-    }
-    if(action == Hold)
-    {
-
-    }
-    if(action == Dribble)
-    {
-
-    }
-    if(action == Move)
-    {
-
-    }
-    /*
-        --------------- Rewards --------------
-        Score Goal: +1.00
-        Concede Goal: -1.00
-        Successful Pass: +0.01 * distance(agent, player)
-        Failed Pass: -0.01 * distance from opposition goal to where the ball was intercepted
-                    OR -0.1
-        Successful Dribble: +0.02 * distance(initial pos, final pos)
-        Failed Dribble / Losing the ball on hand: -0.1
-        Intercept / Tackle: +0.1
+    in rcsc/types.h
     */
 
+    if(side == 1)
+    {
+        // left
+    }
+    if(side == -1)
+    {
+        // right
+        scoreline *= -1;
+    }
+
+    if(wm.gameMode().type() == GameMode::AfterGoal_)
+    {
+        // check for goal
+
+        Vector2D ballPos = wm.ball().pos();
+        if(side == 1)
+        {
+            // left
+            if(ballPos.x > 0)
+            {
+                // goal is made at opposition
+                return 1.0;
+            }
+            else
+            {
+                // goal is made at my goal
+                return -1.0;
+            }
+        }
+        if(side == -1)
+        {
+            // right
+            if(ballPos.x > 0)
+            {
+                // goal is made at my goal
+                return -1.0;
+            }
+            else
+            {
+                // goal is made at opposition
+                return 1.0;
+            }
+        }
+    }
+
+    else if(action >= 2 && action <= 6)
+    {
+        // check for possession
+
+        double f_value, arg0, arg1;
+
+        double reward = 0;
+
+        bool team_has_ball = false, opponent_has_ball = false;
+
+        team_has_ball = wm.existKickableTeammate();
+        opponent_has_ball = wm.existKickableOpponent();
+
+        if(prev_team_has_ball && !prev_opponent_has_ball && opponent_has_ball && !team_has_ball)
+        {
+            /* change of possession: ----> earlier I had the ball, opposition didn't
+                                     ----> Now, Opposition has the ball
+                                     ----> We don't have the ball
+            */
+            // case of being tackled
+
+            if(scoreline != 0)
+            {
+                arg0 = time_passed/totalTime;
+                int sl = (scoreline > 0) ? scoreline : -1 * scoreline;
+                arg1 = sl/20;
+            }   
+            else
+            {
+                arg0 = time_passed/totalTime;
+                arg1 = 1/40;
+            }
+
+            f_value = arg0 * arg1;
+
+            Vector2D opponentGoal = ServerParam::i().theirTeamGoalPos();
+            Vector2D ballPos = wm.ball().pos();
+            Vector2D ballToOpponentGoal = ballPos - opponentGoal;
+
+            double distance = ballToOpponentGoal.norm();
+
+            reward = -1 * f_value * distance;
+            return reward;
+        }
+        else if(!prev_team_has_ball && prev_opponent_has_ball && !opponent_has_ball && team_has_ball)
+        {
+            /* change of possession: ----> earlier we didn't have the ball, opposition had it
+                                     ----> Now, Opposition doesn't have the ball
+                                     ----> We possess the ball
+            */
+            // case of tackling
+
+            if(scoreline != 0)
+            {
+                arg0 = time_passed/totalTime;
+                int sl = (scoreline > 0) ? scoreline : -1 * scoreline;
+                arg1 = sl/20;
+            }   
+            else
+            {
+                arg0 = time_passed/totalTime;
+                arg1 = 1/40;
+            }
+
+            f_value = arg0 * arg1;
+
+            Vector2D opponentGoal = ServerParam::i().theirTeamGoalPos();
+            Vector2D ballPos = wm.ball().pos();
+            Vector2D ballToOpponentGoal = ballPos - opponentGoal;
+
+            double distance = ballToOpponentGoal.norm();
+
+            reward = f_value * distance;
+            return reward;
+        }
+        else if(prev_team_has_ball && !prev_opponent_has_ball && !opponent_has_ball && team_has_ball)
+        {
+            /* no change of possession: ----> I still possess the ball
+            */
+            // case of passing
+
+             double f_value = 0, arg0, arg1;
+            if(scoreline < 0)
+            {
+                arg0 = time_passed/totalTime;
+                arg1 = -1 * scoreline/20;
+            }
+            else if(scoreline > 0)
+            {
+                arg0 = 1 - (time_passed/totalTime);
+                arg1 = scoreline/20;
+            }
+            else
+            {
+                arg0 = time_passed/totalTime;
+                arg1 = 1/40;
+            }
+            f_value = arg0 * arg1;
+
+            Vector2D ourTeamGoalPos = ServerParam::i().ourTeamGoalPos();
+            Vector2D myPos = wm.self().pos();
+
+            Vector2D goalToMe = myPos - ourTeamGoalPos;
+
+            double distance = goalToMe.norm();
+
+            double reward = f_value * distance;
+
+            return reward;
+        }
+        else
+        {
+            return 0;
+        }
+    }
     return 0;
 }
 
@@ -1107,6 +1249,10 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
         Opponenthasball = true;
     }
 
+    bool team_has_ball, opponent_has_ball;
+    team_has_ball = agent->world().existKickableTeammate();
+    opponent_has_ball = agent->world().existKickableOpponent();
+
     //----------XX------------//
     //If you have taken attack, you will have comment out the attach functions are replace
     //them with your own, similarly if you have taken defense, you need to comment out the existing
@@ -1131,7 +1277,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     /* First, we need to play with some order of randomness in order to learn */
     /* After certain knowledge, we will be able to create a policy and follow it */
 
-    std::srand (time(NULL));create state for the agent
+    std::srand (time(NULL));
     int random = rand() % 100 + 1;                  // exploration vs exploitation
 
     int act, act_arg;                               // act:action and act_arg : useful for passing (to which player)
@@ -1311,7 +1457,7 @@ SamplePlayer::executeSampleRole( PlayerAgent * agent )
     newState << str;
     
     std::cout << "Obtaining reward\n\n\n";
-    double reward = obtainReward(agent, prevState.str(), newState.str(), act); // TODO: obtain reward according to it
+    double reward = obtainReward(agent, prevState.str(), newState.str(), act, team_has_ball, opponent_has_ball); // TODO: obtain reward according to it
 
     /* Apply the formula to compute the q value for previous state */
     double q_value, newState_q_value;
