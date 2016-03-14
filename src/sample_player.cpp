@@ -780,8 +780,7 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
         
     if(!myfile.is_open())
     {
-        std::cout << "error opening the file for search!!!\n\n\n";
-        return ;
+        std::cout << "file for search does not exist!!!\n\n\n";
     }
     int flag = 0;
     std::streampos writePos = 0;
@@ -789,29 +788,32 @@ SamplePlayer::writeState(PlayerAgent *agent, std::string prevState, int action, 
     char line_file[351];
     std::cout << "Comparing it with : " << stateAction_new << "in file : " << res << "\n\n\n";
     int pq = 1;
-    myfile.seekg(0);
-    while(myfile.getline(line_file, 351)) // error in this statement not able to read...
+
+    if(myfile.is_open())
     {
-        line = std::string(line_file);
-        std::cout << "Read the line in side the while loop: " << line_file << "\n\n\n";
-        std::cout << "--------------------------------> SEARCHING <------------------------------------" ;
-        int p = line.find_first_of("]");
-        int p2 = line.substr(p+1, line.size()).find_first_of("]");
-        std::string stateAction_inFile = line.substr(0, p2+1);
-
-        int comparable = stateAction_new.compare(stateAction_inFile);
-        if(comparable == 0)
+        myfile.seekg(0);
+        while(myfile.getline(line_file, 351)) // error in this statement not able to read...
         {
-            /* State-Action pair already exists in the file */
-            std::cout << "Its true!!!\n\n\n";
-            flag = 1;
-            break;
-        }
-        writePos = myfile.tellg();
-    }
-    myfile.close();
+            line = std::string(line_file);
+            std::cout << "Read the line in side the while loop: " << line_file << "\n\n\n";
+            std::cout << "--------------------------------> SEARCHING <------------------------------------" ;
+            int p = line.find_first_of("]");
+            int p2 = line.substr(p+1, line.size()).find_first_of("]");
+            std::string stateAction_inFile = line.substr(0, p2+1);
 
-    std::cout << "Read the line: " << line_file << "\n\n\n";
+            int comparable = stateAction_new.compare(stateAction_inFile);
+            if(comparable == 0)
+            {
+                /* State-Action pair already exists in the file */
+                std::cout << "Its true!!!\n\n\n";
+                flag = 1;
+                break;
+            }
+            writePos = myfile.tellg();
+        }
+        myfile.close();
+        std::cout << "Read the line: " << line_file << "\n\n\n";
+    }
 
     if(flag == 1)
     {
